@@ -14,9 +14,12 @@ const session = require('express-session');
 const LocalStrategy = require('passport-local');
 const bcyrpt = require('bcrypt');
 const saltRounds = 10;
+const flash = require('connect-flash');
 
 app.use(express.urlencoded({ extended: false }));
 const path = require('path');
+app.set('views',path.join(__dirname,'views'));
+app.use(flash());
 const user = require('./models/user');
 
 app.use(bodyParser.json());
@@ -24,14 +27,18 @@ app.use(cookieParser('ssh!!!! some secret string'));
 app.use(csrf('this_should_be_32_character_long', ['POST', 'PUT', 'DELETE']));
 
 app.use(session({
-  secret:"this is my secret-122333444455555",
+  secret:"few things are private",
   cookie:{
-    maxAge: 24 * 60 * 60 * 1000 // that will be equal to 24 Hours / A whole day
+    maxAge: 24 * 60 * 60 * 1000
   }
 }))
 
 app.use(passport.initialize());
 app.use(passport.session());
+app.use((request, response, next)=>{
+  response.locals.messages = request.flash();
+  next();
+});
 
 passport.use(new LocalStrategy({
   usernameField: 'email',
@@ -48,13 +55,15 @@ passport.use(new LocalStrategy({
     if(result){
       return done(null,user);
     } else{
-      return done("Invalid Password");
+      return done(null, false, {message: "Invalid Password"});
     }
-    return done(null,user)
   })
   .catch((error) => {
-    return (error)
+    console.error(error);
+    return done(null,false,{
+      message: "Register First"
   })
+})
 }))
 
 
@@ -112,6 +121,15 @@ app.get('/signup', (request, response) => {
 
 app.post('/users', async (request, response) => {
 
+  if (!request.body.firstName) {
+    request.flash("error", "First Name can't be blank");
+    return response.redirect("/signup");
+  }
+  if (!request.body.email) {
+    request.flash("error", "Email can't be blank");
+    return response.redirect("/signup");
+  }
+
   const encryptedPassword =await bcyrpt.hash(request.body.password, saltRounds);
   console.log(encryptedPassword);
 
@@ -145,7 +163,8 @@ app.get('/login',(request,response)=>{
 });
 
 app.post('/session',passport.authenticate('local',{
-  failureRedirect: '/login'
+  failureRedirect: '/login',
+  failureFlash: true,
 }),(request,response)=>{
   console.log(request.user);
   response.redirect('/todos');
@@ -162,7 +181,14 @@ app.get('/signout',(request,response, next) => {
 })
 
 app.post('/todos', connectEnsureLogin.ensureLoggedIn(),async (request, response)=>{
-  console.log('Todo List');
+  if (!request.body.title) {
+    request.flash("error", "Blank title not allowed");
+    response.redirect("/todos");
+  }
+  if (!request.body.dueDate) {
+    request.flash("error", "Blank Date not allowed");
+    response.redirect("/todos");
+  }
 
   try {
     
