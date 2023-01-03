@@ -1,10 +1,11 @@
 /* eslint-disable no-unused-vars */
-const { request, response } = require('express');
+const {request, response} = require('express');
 const express = require('express');
 const app = express();
 const csrf = require('tiny-csrf');
 
-const { Todo, User } = require('./models');
+const {Todo, User} = require('./models');
+
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 
@@ -12,24 +13,30 @@ const passport = require('passport');
 const connectEnsureLogin = require('connect-ensure-login');
 const session = require('express-session');
 const LocalStrategy = require('passport-local');
+
 const bcyrpt = require('bcrypt');
 const saltRounds = 10;
+
 const flash = require('connect-flash');
 
-app.use(express.urlencoded({ extended: false }));
+
+app.use(express.urlencoded({extended: false}));
 const path = require('path');
+
 app.set('views',path.join(__dirname,'views'));
 app.use(flash());
 const user = require('./models/user');
+
+
 
 app.use(bodyParser.json());
 app.use(cookieParser('ssh!!!! some secret string'));
 app.use(csrf('this_should_be_32_character_long', ['POST', 'PUT', 'DELETE']));
 
 app.use(session({
-  secret:"few things are private",
+  secret:"this is my secret-122333444455555",
   cookie:{
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000 // that will be equal to 24 Hours / A whole day
   }
 }))
 
@@ -61,9 +68,10 @@ passport.use(new LocalStrategy({
   .catch((error) => {
     console.error(error);
     return done(null,false,{
-      message: "Register First"
+      message: "You are not a registered user",
+    })
+
   })
-})
 }))
 
 
@@ -81,16 +89,14 @@ passport.deserializeUser((id,done) => {
     done(error, null)
   })
 })
-
-
 // seting the ejs is the engine
 app.set('view engine', 'ejs');
 
-app.get('/', async (request, response) => {
-  response.render('index', {
-    title: 'Todo Application',
-    csrfToken: request.csrfToken(),
-  });
+app.get('/', async (request, response)=>{
+    response.render('index', {
+      title: 'Todo Application',
+      csrfToken: request.csrfToken(),
+    });
 });
 
 app.get('/todos',connectEnsureLogin.ensureLoggedIn(), async (request, response)=>{
@@ -106,21 +112,21 @@ app.get('/todos',connectEnsureLogin.ensureLoggedIn(), async (request, response)=
       csrfToken: request.csrfToken(),
     });
   } else {
-    response.json({ allTodos, overdue, dueToday, dueLater });
+    response.json({allTodos, overdue, dueToday, dueLater});
   }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/signup', (request, response) => {
-  response.render('signup', {
+app.get('/signup',(request,response)=>{
+  response.render('signup',{
     title: 'Sign Up',
     csrfToken: request.csrfToken(),
   });
 });
 
-app.post('/users', async (request, response) => {
-
+app.post('/users',async (request,response)=>{
+  
   if (!request.body.firstName) {
     request.flash("error", "First Name can't be blank");
     return response.redirect("/signup");
@@ -129,16 +135,15 @@ app.post('/users', async (request, response) => {
     request.flash("error", "Email can't be blank");
     return response.redirect("/signup");
   }
-
-  const encryptedPassword =await bcyrpt.hash(request.body.password, saltRounds);
-  console.log(encryptedPassword);
-
-  try {
+  
+  const hashedPwd =await bcyrpt.hash(request.body.password, saltRounds);
+  console.log(hashedPwd);
+  try{
     const user = await User.create({
       firstName: request.body.firstName,
       lastName: request.body.lastName,
       email: request.body.email,
-      password: encryptedPassword
+      password: hashedPwd,
     });
     request.login(user, (err)=> {
       if(err){
@@ -149,10 +154,10 @@ app.post('/users', async (request, response) => {
     })
     
   }
-  catch (error) {
+  catch(error){
     console.log(error);
   }
-
+  
 });
 
 app.get('/login',(request,response)=>{
@@ -181,7 +186,7 @@ app.get('/signout',(request,response, next) => {
 })
 
 app.post('/todos', connectEnsureLogin.ensureLoggedIn(),async (request, response)=>{
-  if (!request.body.title) {
+ if (!request.body.title) {
     request.flash("error", "Blank title not allowed");
     response.redirect("/todos");
   }
@@ -189,7 +194,6 @@ app.post('/todos', connectEnsureLogin.ensureLoggedIn(),async (request, response)
     request.flash("error", "Blank Date not allowed");
     response.redirect("/todos");
   }
-
   try {
     
     console.log('entering in try block');
@@ -203,7 +207,7 @@ app.post('/todos', connectEnsureLogin.ensureLoggedIn(),async (request, response)
     console.log(error);
     return response.status(422).json(error);
   }
-});  
+});
 
 app.put('/todos/:id', async (request, response) => {
   const todo = await Todo.findByPk(request.params.id);
@@ -215,10 +219,9 @@ app.put('/todos/:id', async (request, response) => {
   }
 });
 
-app.delete('/todos/:id',connectEnsureLogin.ensureLoggedIn(), async function (request, response) {
+app.delete('/todos/:id', connectEnsureLogin.ensureLoggedIn(), async function(request, response) {
   console.log('We have to delete a Todo with ID: ', request.params.id);
-
-  const deleteFlag = await Todo.destroy({ where: { id: request.params.id, userId:request.user.id,}});
+  const deleteFlag = await Todo.destroy({where: {id: request.params.id, userId:request.user.id,}});
   response.send(deleteFlag ? true : false);
 });
 
