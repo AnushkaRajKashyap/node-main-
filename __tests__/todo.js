@@ -21,7 +21,7 @@ const login = async (agent, username, password) => {
   });
 };
 
-describe('tests', () => {
+describe('todo test suits', () => {
   beforeAll(async () => {
     await db.sequelize.sync({ force: true });
     server = app.listen(process.env.PORT || 3000, () => {});
@@ -32,7 +32,7 @@ describe('tests', () => {
     server.close();
   });
 
-  test('Sign Up', async () => {
+  test('Sign Up is working/not', async () => {
     let res = await agent.get("/signup");
     const csrfToken = fetchCsrfToken(res);
     res = await agent.post("/users").send({
@@ -45,7 +45,7 @@ describe('tests', () => {
     expect(res.statusCode).toBe(302);
   });
 
-  test('Sign out', async () => {
+  test('Sign out is working/not', async () => {
     let res = await agent.get("/todos");
     expect(res.statusCode).toBe(200);
     res = await agent.get("/signout");
@@ -54,7 +54,7 @@ describe('tests', () => {
     expect(res.statusCode).toBe(302);
   });
 
-  test('Create new todo', async () => {
+  test('Test the functionality of create a new todo item', async () => {
     const agent = request.agent(server);
     await login(agent, "first@last.com", "123");
     const getResponse = await agent.get("/todos");
@@ -67,7 +67,7 @@ describe('tests', () => {
     });
     expect(response.statusCode).toBe(302);
   });
-  test('markAsCompleted', async () => {
+  test('Test the update functionality by updating the markAsCompleted', async () => {
     const agent = request.agent(server);
     await login(agent, "first@last.com", "123");
     const getResponse = await agent.get("/todos");
@@ -95,7 +95,7 @@ describe('tests', () => {
     const UpadteTodoItemParse = JSON.parse(changeTodo.text);
     expect(UpadteTodoItemParse.completed).toBe(true);
   });
-  test('delete', async () => {
+  test('Test the delete functionality', async () => {
     const agent = request.agent(server);
     await login(agent, "first@last.com", "123");
     const getResponse = await agent.get("/todos");
@@ -124,7 +124,7 @@ describe('tests', () => {
     expect(boolResponse).toBe(true);
   });
 
-  test('mark as incomplete', async () => {
+  test('Test the marking an item as incomplete', async () => {
     const agent = request.agent(server);
     await login(agent, "first@last.com", "123");
     const getResponse = await agent.get("/todos");

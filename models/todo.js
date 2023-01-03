@@ -11,17 +11,17 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
       Todo.belongsTo(models.User,{
         foreignKey: 'userId'
       })
+      // define association here
     }
 
-    static addTodo({ title, dueDate, userId}) {
-      return this.create({ title: title, dueDate: dueDate, completed: false, userId});
+    static addTodo({title, dueDate, userId}) {
+      return this.create({title: title, dueDate: dueDate, completed: false,userId});
     }
 
-    static getTodos() {
+    static getTodos(){
       return this.findAll();
     }
 
@@ -66,7 +66,7 @@ module.exports = (sequelize, DataTypes) => {
       })
     }
 
-    static async completedItems(userId) {
+    static async completedItems(userId){
       return this.findAll({
         where: {
           completed: true,
@@ -77,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
     setCompletionStatus(receiver) {
       return this.update({ completed: receiver });
     }
-
+    
   }
   Todo.init({
     title: DataTypes.STRING,
