@@ -3,22 +3,16 @@ const {request, response} = require('express');
 const express = require('express');
 const app = express();
 const csrf = require('tiny-csrf');
-
 const {Todo, User} = require('./models');
-
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-
 const passport = require('passport');
 const connectEnsureLogin = require('connect-ensure-login');
 const session = require('express-session');
 const LocalStrategy = require('passport-local');
-
 const bcyrpt = require('bcrypt');
 const saltRounds = 10;
-
 const flash = require('connect-flash');
-
 
 app.use(express.urlencoded({extended: false}));
 const path = require('path');
@@ -27,16 +21,14 @@ app.set('views',path.join(__dirname,'views'));
 app.use(flash());
 const user = require('./models/user');
 
-
-
 app.use(bodyParser.json());
 app.use(cookieParser('ssh!!!! some secret string'));
 app.use(csrf('this_should_be_32_character_long', ['POST', 'PUT', 'DELETE']));
 
 app.use(session({
-  secret:"this is my secret-122333444455555",
+  secret:"Private parts",
   cookie:{
-    maxAge: 24 * 60 * 60 * 1000 // that will be equal to 24 Hours / A whole day
+    maxAge: 24 * 60 * 60 * 1000 
   }
 }))
 
@@ -68,7 +60,7 @@ passport.use(new LocalStrategy({
   .catch((error) => {
     console.error(error);
     return done(null,false,{
-      message: "You are not a registered user",
+      message: "Not a registered user",
     })
 
   })
@@ -128,11 +120,11 @@ app.get('/signup',(request,response)=>{
 app.post('/users',async (request,response)=>{
   
   if (!request.body.firstName) {
-    request.flash("error", "First Name can't be blank");
+    request.flash("error", "Enter a first name");
     return response.redirect("/signup");
   }
   if (!request.body.email) {
-    request.flash("error", "Email can't be blank");
+    request.flash("error", "Enter an email");
     return response.redirect("/signup");
   }
   
@@ -187,11 +179,11 @@ app.get('/signout',(request,response, next) => {
 
 app.post('/todos', connectEnsureLogin.ensureLoggedIn(),async (request, response)=>{
  if (!request.body.title) {
-    request.flash("error", "Blank title not allowed");
+    request.flash("error", "Please select a title");
     response.redirect("/todos");
   }
   if (!request.body.dueDate) {
-    request.flash("error", "Blank Date not allowed");
+    request.flash("error", "Please select a date");
     response.redirect("/todos");
   }
   try {
