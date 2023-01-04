@@ -45,6 +45,19 @@ describe('Todo Tests', () => {
     expect(res.statusCode).toBe(302);
   });
 
+  test('Another signup feature test', async () => {
+    let res = await agent.get("/signup");
+    const csrfToken = fetchCsrfToken(res);
+    res = await agent.post("/users").send({
+      firstName: "second",
+      lastName: "user",
+      email: "second@gmail.com",
+      password: "pass",
+      _csrf: csrfToken,
+    });
+    expect(res.statusCode).toBe(302);
+  });
+
   test('Sign out Test', async () => {
     let res = await agent.get("/todos");
     expect(res.statusCode).toBe(200);
@@ -161,5 +174,37 @@ describe('Todo Tests', () => {
 
     const UpadteTodoItemParse2 = JSON.parse(changeTodo2.text);
     expect(UpadteTodoItemParse2.completed).toBe(false);
+  });
+  test("Other user doesnot affect any other user test", async () => {
+    const firstAgent = request.agent(server);
+    await login(firstAgent, "first@last.com", "123");
+    let res = await firstAgent.get("/todos");
+    let csrfToken = fetchCsrfToken(res);
+    await firstAgent.post("/todos").send({
+      title: "first user todo",
+      dueDate: new Date().toISOString(),
+      completed: false,
+      _csrf: csrfToken,
+    });
+
+    const groupedTodosResponse = await firstAgent
+      .get("/todos")
+      .set("Accept", "application/json");
+    const parsedGroupedResponse = JSON.parse(groupedTodosResponse.text);
+    const dueTodayCount = parsedGroupedResponse.dueToday.length;
+    const firstUserLatestTodo = parsedGroupedResponse.dueToday[dueTodayCount - 1];
+
+    const secondAgent = request.agent(server);
+    await login(secondAgent, "second@gmail.com", "pass");
+
+    res = await secondAgent.get("/todos");
+    csrfToken = fetchCsrfToken(res);
+    const deletedResponse = await secondAgent
+      .delete(`/todos/${firstUserLatestTodo.id}`)
+      .send({
+        _csrf: csrfToken,
+      });
+    const parsedDeletedResponse = JSON.parse(deletedResponse.text);
+    expect(parsedDeletedResponse).toBe(false);
   });
 });

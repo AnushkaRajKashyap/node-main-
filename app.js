@@ -36,7 +36,7 @@ app.use(csrf('this_should_be_32_character_long', ['POST', 'PUT', 'DELETE']));
 app.use(session({
   secret:"private",
   cookie:{
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 24 * 60 * 60 * 1000 // that will be equal to 24 Hours / A whole day
   }
 }))
 
@@ -93,10 +93,17 @@ passport.deserializeUser((id,done) => {
 app.set('view engine', 'ejs');
 
 app.get('/', async (request, response)=>{
+  if(request.user)
+  {
+    response.redirect('/todos');
+  }
+  else{
     response.render('index', {
       title: 'Todo Application',
       csrfToken: request.csrfToken(),
     });
+  }
+  
 });
 
 app.get('/todos',connectEnsureLogin.ensureLoggedIn(), async (request, response)=>{
@@ -108,7 +115,7 @@ app.get('/todos',connectEnsureLogin.ensureLoggedIn(), async (request, response)=
   const completedItems = await Todo.completedItems(loggedInUser);
   if (request.accepts('html')) {
     response.render('todos', {
-      allTodos, overdue, dueToday, dueLater, completedItems,
+      allTodos, overdue, dueToday, dueLater, completedItems,user: request.user,
       csrfToken: request.csrfToken(),
     });
   } else {
@@ -128,13 +135,19 @@ app.get('/signup',(request,response)=>{
 app.post('/users',async (request,response)=>{
   
   if (!request.body.firstName) {
-    request.flash("error", "First Name can't be blank");
+    request.flash("error", "Enter a first name");
     return response.redirect("/signup");
   }
   if (!request.body.email) {
-    request.flash("error", "Email can't be blank");
+    request.flash("error", "Enter an email");
     return response.redirect("/signup");
   }
+  
+  if (!request.body.password) {
+    request.flash("error", "Enter the password");
+    return response.redirect("/signup");
+  }
+
   
   const hashedPwd =await bcyrpt.hash(request.body.password, saltRounds);
   console.log(hashedPwd);
@@ -156,8 +169,10 @@ app.post('/users',async (request,response)=>{
   }
   catch(error){
     console.log(error);
+    request.flash("error", error.errors[0].message);
+    response.redirect("/signup");
   }
-  
+
 });
 
 app.get('/login',(request,response)=>{
@@ -187,11 +202,11 @@ app.get('/signout',(request,response, next) => {
 
 app.post('/todos', connectEnsureLogin.ensureLoggedIn(),async (request, response)=>{
  if (!request.body.title) {
-    request.flash("error", "Blank title not allowed");
+    request.flash("error", "Add title");
     response.redirect("/todos");
   }
   if (!request.body.dueDate) {
-    request.flash("error", "Blank Date not allowed");
+    request.flash("error", "Add date");
     response.redirect("/todos");
   }
   try {
@@ -221,14 +236,15 @@ app.put('/todos/:id', async (request, response) => {
 
 app.delete('/todos/:id', connectEnsureLogin.ensureLoggedIn(), async function(request, response) {
   console.log('We have to delete a Todo with ID: ', request.params.id);
-  // FILL IN YOUR CODE HERE
-
-  // First, we have to query our database to delete a Todo by ID.
-  // eslint-disable-next-line max-len
-  // Then, we have to respond back with true/false based on whether the Todo was deleted or not.
-  // response.send(true)
+  
   const deleteFlag = await Todo.destroy({where: {id: request.params.id, userId:request.user.id,}});
-  response.send(deleteFlag ? true : false);
+  if(deleteFlag ===0)
+  {
+    return response.send(false);
+  }
+  else{
+    response.send(true);
+  }
 });
 
 module.exports = app;
