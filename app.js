@@ -34,9 +34,9 @@ app.use(cookieParser('ssh!!!! some secret string'));
 app.use(csrf('this_should_be_32_character_long', ['POST', 'PUT', 'DELETE']));
 
 app.use(session({
-  secret:"this is my secret-122333444455555",
+  secret:"private",
   cookie:{
-    maxAge: 24 * 60 * 60 * 1000 // that will be equal to 24 Hours / A whole day
+    maxAge: 24 * 60 * 60 * 1000
   }
 }))
 
@@ -158,7 +158,6 @@ app.post('/users',async (request,response)=>{
     console.log(error);
   }
   
-  //console.log("First Name:",request.body.firstName)
 });
 
 app.get('/login',(request,response)=>{
